@@ -1,6 +1,6 @@
 function [A,B,C,D] = Flutter_rig(x__alpha,r_a,c__alpha,c__h,w_a,w_h,m,m__T,b,a,Ts)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+% Equation of motion of Flutter equation
+% Input of system identification toolbox
 
 rho=1.204; % Air density
 I__alpha=m*(b*r_a)^2; % Mass moment of Inertia
