@@ -12,21 +12,22 @@ close all;
 clc;
 
 %% Importing the measured data (Free_decay)
-load('Measured_data')
-t_end=3.0; % Define the length of time data for system identification
+load('Measured_data2')
+t_end=2.0; % Define the length of time data for system identification
 % Description of variables (Stored in Measured_data.mat)
 % data: measured response [heave;angle], b: wing semi chord, a: position of elastic axis to the semi-chord, m: mass ofthe wing
 % m__T: total mass of the rig, w_a: modal freq of the pitch mode at U=0,
 % w_h: modal freq of the heave mode at U=0, x__alpha: nondimensional
 % distance between center of gravity and elastic axis, r_a: nondimensional radius of gyration 
 % rho: air density, fs: sampling freuqency, 
-
-[r_a,c__alpha,c__h]=Lin_parameter_ID(data,b,a,m,m__T,w_a,w_h,x__alpha,r_a,c__alpha,c__h,Ts,fs,sen,t_end);
+fs=5000;
+[c__alpha,w_a]=Lin_parameter_ID(data,b,a,m,m__T,w_a,w_h,x__alpha,r_a,c__alpha,c__h,Ts,fs,sen,t_end);
 
 %%
 I__alpha=m*(b*r_a)^2; % Mass moment of Inertia about the elastic axis
 k__alpha=I__alpha*w_a^2; % pitch stifness
 k__h=m__T*w_h^2; % heave stifness
+
 
 U_max=30; % Maximum wind speed
 wind_step=0.02; % Steps of wind speed to find Hopf point 
@@ -41,7 +42,7 @@ coordinate_trans=[modal_V(:,4),modal_V(:,5),modal_V(:,2),modal_V(:,3),modal_V(:,
 
 [out1,out2,out3,out4,out5,out6,r_out1,r_out2,r_out3,r_out4,r_out5,r_out6]=derive_EM(Uf,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho,coordinate_trans);
 
-function [r_a,c__alpha,c__h] = Lin_parameter_ID(data,b,a,m,m__T,w_a,w_h,x__alpha,r_a,c__alpha,c__h,Ts,fs,sen,t_end)
+function [c__alpha,w_a] = Lin_parameter_ID(data,b,a,m,m__T,w_a,w_h,x__alpha,r_a,c__alpha,c__h,Ts,fs,sen,t_end)
 h=data(2,:);
 p=data(1,:);
 
@@ -55,7 +56,7 @@ time=1/fs:1/fs:1/fs*length(data(1,:));
 
 sl=t_end*fs; % length of the time data
 
-time_shift=1;
+time_shift=0.2;
 t_shift=fs*time_shift;
 
 h1=h(cc+t_shift:cc+t_shift+sl)-zh;
@@ -70,7 +71,8 @@ data = iddata(in1,[],0.0002);
 data.OutputName=[{'Heave (m)'}; {'Pitch (Rad)'}];
 linear_model = idgrey('Flutter_rig', {x__alpha,r_a,c__alpha,c__h,w_a,w_h,m,m__T,b,a},'c');
 linear_model.Structure.Parameters(1).Free = false;
-linear_model.Structure.Parameters(5).Free = false;
+linear_model.Structure.Parameters(2).Free = false;
+linear_model.Structure.Parameters(4).Free = false;
 linear_model.Structure.Parameters(6).Free = false;
 linear_model.Structure.Parameters(7).Free = false;
 linear_model.Structure.Parameters(8).Free = false;
@@ -80,9 +82,8 @@ opt = greyestOptions('InitialState','estimate','Display','off');
 opt.Focus = 'stability';
 linear_model = greyest(data,linear_model,opt);
 
-r_a=linear_model.Structure.Parameters(2).Value; % Nondimensional Radius of gyration
 c__alpha=linear_model.Structure.Parameters(3).Value;
-c__h=linear_model.Structure.Parameters(4).Value;
+w_a=linear_model.Structure.Parameters(5).Value;
 end
 
 function [J]=Flutter_Jac(U,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho)
@@ -154,7 +155,6 @@ function [out1,out2,out3,out4,out5,out6,r_out1,r_out2,r_out3,r_out4,r_out5,r_out
 decimal = 5; % decimal number to eliminate very little coefficients produced by numerical error
 % Dia=round(10^decimal*Dia)./10^decimal;
 
-
 syms delta ka2 ka3 x2 x3 x4 x5 x6 x7 U;
 
 assume(delta,'real');
@@ -198,6 +198,7 @@ DiaJ_sym=expand(DiaJ_sym);
 x_vec=[x2;x3;x4;x5;x6;x7]; 
 
 f=DiaJ_num*x_vec+J_sym*x_vec;
+out_f = vpa(f,6);
 
 % AV=VD where V is eigenvector, D is diagonalized matrix
 % inv(V)*A=D*inv(V)
