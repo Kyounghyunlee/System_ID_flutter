@@ -39,7 +39,7 @@ n_eigenvalue=[eig_value(4),eig_value(5),eig_value(2),eig_value(3),eig_value(1),e
 coordinate_trans=[modal_V(:,4),modal_V(:,5),modal_V(:,2),modal_V(:,3),modal_V(:,1),modal_V(:,6)];
 %%
 
-[out1,out2,out3,out4,out5,out6,r_out1,r_out2,r_out3,r_out4,r_out5,r_out6]=derive_EM(Uf,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho,coordinate_trans);
+[out2,out3,out4,out5,out6,out7,r_out1,r_out2,r_out3,r_out4,r_out5,r_out6]=derive_EM(Uf,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho,coordinate_trans);
 
 function [r_a,c__alpha,c__h] = Lin_parameter_ID(data,b,a,m,m__T,w_a,w_h,x__alpha,r_a,c__alpha,c__h,Ts,fs,sen,t_end)
 h=data(2,:);
@@ -85,7 +85,7 @@ c__alpha=linear_model.Structure.Parameters(3).Value;
 c__h=linear_model.Structure.Parameters(4).Value;
 end
 
-function [J]=Flutter_Jac(U,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho)
+function [J,MM]=Flutter_Jac(U,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho)
 
 MM = [b ^ 2 * pi * rho + m__T -a * b ^ 3 * pi * rho + b * m * x__alpha 0; -a * b ^ 3 * pi * rho + b * m * x__alpha I__alpha + pi * (0.1e1 / 0.8e1 + a ^ 2) * rho * b ^ 4 0; 0 0 1;];
 DD = [c__h + 2 * pi * rho * b * U * (c__0 - c__1 - c__3) (1 + (c__0 - c__1 - c__3) * (1 - 2 * a)) * pi * rho * b ^ 2 * U 2 * pi * rho * U ^ 2 * b * (c__1 * c__2 + c__3 * c__4); -0.2e1 * pi * (a + 0.1e1 / 0.2e1) * rho * (b ^ 2) * (c__0 - c__1 - c__3) * U c__alpha + (0.1e1 / 0.2e1 - a) * (1 - (c__0 - c__1 - c__3) * (1 + 2 * a)) * pi * rho * (b ^ 3) * U -0.2e1 * pi * rho * (U ^ 2) * (b ^ 2) * (a + 0.1e1 / 0.2e1) * (c__1 * c__2 + c__3 * c__4); -1 / b a - 0.1e1 / 0.2e1 (c__2 + c__4) * U / b;];
@@ -149,7 +149,7 @@ Uf=U;
 end
 
 % Deriving Equation of motion in the form of Julia CODE(Center Manifold) 
-function [out1,out2,out3,out4,out5,out6,r_out1,r_out2,r_out3,r_out4,r_out5,r_out6]=derive_EM(Uf,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho,coordinate_trans)
+function [out2,out3,out4,out5,out6,out7,r_out1,r_out2,r_out3,r_out4,r_out5,r_out6]=derive_EM(Uf,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho,coordinate_trans)
 
 decimal = 5; % decimal number to eliminate very little coefficients produced by numerical error
 % Dia=round(10^decimal*Dia)./10^decimal;
@@ -161,7 +161,7 @@ assume(delta,'real');
 assume(ka2,'real');
 assume(ka3,'real');
 
-[J]=Flutter_Jac(U,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho);
+[J,MM]=Flutter_Jac(U,b,a,m,m__T,x__alpha,c__0,c__1,c__2,c__3,c__4,k__h,k__alpha,I__alpha,c__alpha,c__h,rho);
 
 rJ=J;
 J=subs(J,U,Uf+delta); %Substitute U with U+delta %% J is a real matrix
@@ -197,7 +197,7 @@ DiaJ_sym=expand(DiaJ_sym);
 % Express the equation of motion with symbolic variables
 x_vec=[x2;x3;x4;x5;x6;x7]; 
 
-f=DiaJ_num*x_vec+J_sym*x_vec;
+f=DiaJ_num*x_vec+DiaJ_sym*x_vec;
 
 % AV=VD where V is eigenvector, D is diagonalized matrix
 % inv(V)*A=D*inv(V)
@@ -209,7 +209,8 @@ original_coordinate=coordinate_trans*x_vec;
 h=original_coordinate(1); % Express the heave in the modal coordinates
 angle=original_coordinate(3); % Express the pitch angle in the modal coordinates
 
-nonlinear_sitff=[0;0;0;-ka2*angle^2-ka3*angle^3;0;0]; 
+non_s=inv(MM)*[0;-ka2*angle^2-ka3*angle^3;0];
+nonlinear_sitff=[0;non_s(1);0;non_s(2);0;0]; 
 nonlinear_sitff=inv(coordinate_trans)*nonlinear_sitff; % Express the nonlinear stiffeness part in the modal coordinates
 
 for ii=1:6  
@@ -234,20 +235,21 @@ end
 nonlinear_sitff2=transpose(nonlinear_sitff2);
 
 out=nonlinear_sitff2+f;
-out1=vpa(out(1),6); % Print out and edit the text to use in Julia for center manifold and normal form computation
-out2=vpa(out(2),6);
-out3=vpa(out(3),6);
-out4=vpa(out(4),6);
-out5=vpa(out(5),6);
-out6=vpa(out(6),6);
+out2=vpa(out(1),6); % Print out and edit the text to use in Julia for center manifold and normal form computation
+out3=vpa(out(2),6);
+out4=vpa(out(3),6);
+out5=vpa(out(4),6);
+out6=vpa(out(5),6);
+out7=vpa(out(6),6);
 
 %% Derive Equation of motion in real coordinates
 syms h h_dot theta theta_dot x_bar x_bar_dot U
 var=[h; h_dot ;theta; theta_dot; x_bar; x_bar_dot];
 
 rout=rJ*var;
-
-rout(4)=rout(4)-ka2*theta^2-ka3*theta^3;
+non_s2=inv(MM)*[0;-ka2*theta^2-ka3*theta^3;0];
+rout(2)=rout(2)-non_s2(1);
+rout(4)=rout(4)-non_s2(2);
 
 r_out1=vpa(rout(1),6); % Print out and edit the text to use in Julia for center manifold and normal form computation
 r_out2=vpa(rout(2),6);
