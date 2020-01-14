@@ -29,7 +29,7 @@ Aeq = [];
 beq = [];
 lb = [0,0]; % Lower bound of the parameter search
 ub = [];
-x0 = [3000,3000];
+x0 = [1000,5000];
 [x,fval] = fmincon(fun,x0,A,b,Aeq,beq,lb,ub,nonlcon)
 
 function [amp_err] = amp_LCO(x,m)
@@ -43,7 +43,8 @@ ml=length(m.nu);
 
 % x(1): ka2, x(2)=ka(3)
 for ii=1:ml
-    r2=-0.00879561737287862*m.nu(ii)/(-7.10626449516451e-06*x(2) + 2.33467790333688e-08*x(1)^2);
+    
+    r2=-0.00879535896326061*m.nu(ii)/(-4.52216831510469e-05*x(2) + 8.41659973544258e-07*x(1)^2)
     r=sqrt(r2);
     r=r*m.hportion;
     error(ii)=(r-m.amp(ii))^2/m.amp(ii)^2;
@@ -55,7 +56,7 @@ end
 function [c,ceq] = constraint(x)
 %Nonlinear constraints for the optimization
 %   x(1): ka2 , x(2): ka3
-SLC=-7.10626449516451e-06*x(2) + 2.33467790333688e-08*x(1)^2; %Stability of the LCO near the hopf bifurcation point
+SLC=-4.52216831510469e-05*x(2) + 8.41659973544258e-07*x(1)^2
 % If SLC>0 LCO is unstable (subcritical Hopf bifurcation)
 B23=8.57149841*10^(-10)*x(1)^2-2.615131149*10^(-6)*x(2); % If B23<0 frequency of LCO decreases as amplitude increase
 

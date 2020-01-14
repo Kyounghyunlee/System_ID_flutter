@@ -249,8 +249,8 @@ var=[h; h_dot ;theta; theta_dot; x_bar; x_bar_dot];
 
 rout=rJ*var;
 non_s2=inv(MM)*[0;-ka2*theta^2-ka3*theta^3;0];
-rout(2)=rout(2)-non_s2(1);
-rout(4)=rout(4)-non_s2(2);
+rout(2)=rout(2)+non_s2(1);
+rout(4)=rout(4)+non_s2(2);
 
 r_out1=vpa(rout(1),6); % Print out and edit the text to use in Julia for center manifold and normal form computation
 r_out2=vpa(rout(2),6);

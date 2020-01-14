@@ -29,7 +29,7 @@ Aeq = [];
 beq = [];
 lb = [0,0]; % Lower bound of the parameter search
 ub = [];
-x0 = [2000,2000];
+x0 = [600,3500];
 [x,fval] = fmincon(fun,x0,A,b,Aeq,beq,lb,ub,nonlcon)
 
 function [amp_err] = amp_LCO(x,m)
@@ -43,7 +43,7 @@ ml=length(m.nu);
 
 % x(1): ka2, x(2)=ka(3)
 for ii=1:ml
-    r2=-0.6792509995e-2*m.nu(ii)/(1.282397242*10^(-8)*x(1)^2-4.610449913*10^(-6)*x(2));;
+    r2=-0.00679270758550738*m.nu(ii)/(-2.8979970888302e-05*x(2) + 4.55198695628218e-07*x(1)^2);
     r=sqrt(r2);
     r=r*m.hportion;
     error(ii)=(r-m.amp(ii))^2/m.amp(ii)^2;
@@ -55,7 +55,7 @@ end
 function [c,ceq] = constraint(x)
 %Nonlinear constraints for the optimization
 %   x(1): ka2 , x(2): ka3
-SLC=-4.61044991404804e-06*x(2) + 1.28239724172924e-08*x(1)^2 %Stability of the LCO near the hopf bifurcation point
+SLC=-2.8979970888302e-05*x(2) + 4.55198695628218e-07*x(1)^2; %Stability of the LCO near the hopf bifurcation point
 % If SLC>0 LCO is unstable (subcritical Hopf bifurcation)
 
 c(1)= -SLC; % Find the parameters that makes dynamical system Subcritical Hopf Bifurcation (SLC>0)
